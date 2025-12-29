@@ -4,7 +4,8 @@ http://standards.freedesktop.org/menu-spec/
 """
 
 from __future__ import generators
-import locale, os, xml.dom.minidom
+import locale, os
+from defusedxml import minidom
 
 from xdg.BaseDirectory import *
 from xdg.DesktopEntry import *
@@ -13,7 +14,7 @@ from xdg.Exceptions import *
 import xdg.Locale
 import xdg.Config
 
-ELEMENT_NODE = xml.dom.Node.ELEMENT_NODE
+ELEMENT_NODE = minidom.Node.ELEMENT_NODE
 
 # for python <= 2.3
 try:
@@ -294,20 +295,18 @@ class Rule:
         return self.Rule
 
     def compile(self):
-        exec("""
-def do(menuentries, type, run):
-    for menuentry in menuentries:
-        if run == 2 and ( menuentry.MatchedInclude == True \
-        or menuentry.Allocated == True ):
-            continue
-        elif %s:
-            if type == "Include":
-                menuentry.Add = True
-                menuentry.MatchedInclude = True
-            else:
-                menuentry.Add = False
-    return menuentries
-""" % self.Rule) in self.__dict__
+        def do(menuentries, type, run):
+            for menuentry in menuentries:
+                if run == 2 and (menuentry.MatchedInclude == True or menuentry.Allocated == True):
+                    continue
+                elif eval(self.Rule):
+                    if type == "Include":
+                        menuentry.Add = True
+                        menuentry.MatchedInclude = True
+                    else:
+                        menuentry.Add = False
+            return menuentries
+        self.do = do
 
     def parseNode(self, node):
         for child in node.childNodes:
@@ -511,7 +510,7 @@ def parse(filename=None):
 
     # create xml parser
     try:
-        doc = xml.dom.minidom.parse(filename)
+        doc = minidom.parse(filename)
     except xml.parsers.expat.ExpatError:
         raise ParsingError('Not a valid .menu file', filename)
 
@@ -781,7 +780,7 @@ def __mergeFile(filename, child, parent):
 
     # load file
     try:
-        doc = xml.dom.minidom.parse(filename)
+        doc = minidom.parse(filename)
     except IOError:
         if debug:
             raise ParsingError('File not found', filename)
