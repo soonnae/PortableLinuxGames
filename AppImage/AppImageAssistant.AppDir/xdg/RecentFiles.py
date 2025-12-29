@@ -3,7 +3,7 @@ Implementation of the XDG Recent File Storage Specification Version 0.2
 http://standards.freedesktop.org/recent-file-spec
 """
 
-import xml.dom.minidom, xml.sax.saxutils
+import defusedxml.minidom, xml.sax.saxutils
 import os, time, fcntl
 from xdg.Exceptions import *
 
@@ -17,10 +17,10 @@ class RecentFiles:
             filename = os.path.join(os.getenv("HOME"), ".recently-used")
 
         try:
-            doc = xml.dom.minidom.parse(filename)
+            doc = defusedxml.minidom.parse(filename)
         except IOError:
             raise ParsingError('File not found', filename)
-        except xml.parsers.expat.ExpatError:
+        except defusedxml.common.DefusedXmlException:
             raise ParsingError('Not a valid .menu file', filename)
 
         self.filename = filename

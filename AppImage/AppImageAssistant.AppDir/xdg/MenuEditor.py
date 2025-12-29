@@ -6,7 +6,7 @@ from xdg.Exceptions import *
 from xdg.DesktopEntry import *
 from xdg.Config import *
 
-import xml.dom.minidom
+import defusedxml.minidom
 import os
 import re
 
@@ -49,10 +49,10 @@ class MenuEditor:
             self.filename = os.path.join(xdg_config_dirs[0], "menus", os.path.split(self.menu.Filename)[1])
 
         try:
-            self.doc = xml.dom.minidom.parse(self.filename)
+            self.doc = defusedxml.minidom.parse(self.filename)
         except IOError:
-            self.doc = xml.dom.minidom.parseString('<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN" "http://standards.freedesktop.org/menu-spec/menu-1.0.dtd"><Menu><Name>Applications</Name><MergeFile type="parent">'+self.menu.Filename+'</MergeFile></Menu>')
-        except xml.parsers.expat.ExpatError:
+            self.doc = defusedxml.minidom.parseString('<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN" "http://standards.freedesktop.org/menu-spec/menu-1.0.dtd"><Menu><Name>Applications</Name><MergeFile type="parent">'+self.menu.Filename+'</MergeFile></Menu>')
+        except defusedxml.common.EntitiesForbidden:
             raise ParsingError('Not a valid .menu file', self.filename)
 
         self.__remove_whilespace_nodes(self.doc)
@@ -423,7 +423,7 @@ class MenuEditor:
 
     def __getXmlNodesByName(self, name, element):
         for child in element.childNodes:
-            if child.nodeType == xml.dom.Node.ELEMENT_NODE and child.nodeName in name:
+            if child.nodeType == defusedxml.minidom.Node.ELEMENT_NODE and child.nodeName in name:
                 yield child
 
     def __addLayout(self, parent):
@@ -501,7 +501,7 @@ class MenuEditor:
     def __remove_whilespace_nodes(self, node):
         remove_list = []
         for child in node.childNodes:
-            if child.nodeType == xml.dom.minidom.Node.TEXT_NODE:
+            if child.nodeType == defusedxml.minidom.Node.TEXT_NODE:
                 child.data = child.data.strip()
                 if not child.data.strip():
                     remove_list.append(child)
